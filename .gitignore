@@ -1,0 +1,14 @@
+# Archivos de compilación y binarios
+Debug/
+Release/
+*.o
+*.elf
+*.hex
+*.bin
+*.map
+*.d
+
+# Configuración local de usuario (específica de tu PC)
+.settings/
+*.suo
+*.user
