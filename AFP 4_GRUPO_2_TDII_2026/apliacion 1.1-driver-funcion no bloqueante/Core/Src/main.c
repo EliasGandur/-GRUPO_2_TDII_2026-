@@ -9,11 +9,12 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+#include "string.h"
 #include "API_GPIO.h"
 #include "API_Delay.h"
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -27,30 +28,30 @@ typedef enum {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define LED1 LD1_Pin //led verde
+#define LED2 LD2_Pin //led azul
+#define LED3 LD3_Pin // led rojo
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+
 /* USER CODE BEGIN PV */
-delay_t pasoDelay;
+led_t LEDS[] = {LED1, LED2, LED3};
 estadoSecuencia_t estadoActual = ESTADO_LED1_ON;
+delay_t ledDelay;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
 /* USER CODE BEGIN PFP */
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 /* USER CODE END 0 */
 
 /**
@@ -59,35 +60,22 @@ static void MX_GPIO_Init(void);
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
   /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
 
   /* USER CODE BEGIN 2 */
-  // Inicializamos el retardo y los estados de los pines tras configurar los GPIO
-  delayInit(&pasoDelay, 200);
-  writePin(LD1_GPIO_Port, LD1_Pin, API_GPIO_PIN_SET);
-  writePin(LD2_GPIO_Port, LD2_Pin, API_GPIO_PIN_RESET);
-  writePin(LD3_GPIO_Port, LD3_Pin, API_GPIO_PIN_RESET);
+
+  delayInit(&ledDelay, 200);
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -97,38 +85,34 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if (delayRead(&pasoDelay))
-    {
-      /* Conmutación según el estado actual */
-      switch (estadoActual)
-      {
-        case ESTADO_LED1_ON:
 
-          writePin(LD1_GPIO_Port, LD1_Pin, API_GPIO_PIN_RESET);
-          writePin(LD2_GPIO_Port, LD2_Pin, API_GPIO_PIN_SET);
-          writePin(LD3_GPIO_Port, LD3_Pin, API_GPIO_PIN_RESET);
+	  if (delayRead(&ledDelay)) {
 
-          estadoActual = ESTADO_LED2_ON;
-          break;
+		  //-------LEDS APAGADOS------//
+		  LEDapagado_GPIO(LEDS[0]);
+		  LEDapagado_GPIO(LEDS[1]);
+		  LEDapagado_GPIO(LEDS[2]);
+	      //--------------------------//
 
-        case ESTADO_LED2_ON:
+	      switch (estadoActual) {
+	          case ESTADO_LED1_ON:
+	        	  LEDencendido_GPIO(LEDS[0]);
+	              estadoActual = ESTADO_LED2_ON;
+	              break;
 
-          writePin(LD2_GPIO_Port, LD2_Pin, API_GPIO_PIN_RESET);
-          writePin(LD1_GPIO_Port, LD1_Pin, API_GPIO_PIN_RESET);
-          writePin(LD3_GPIO_Port, LD3_Pin, API_GPIO_PIN_SET);
+	          case ESTADO_LED2_ON:
+	        	  LEDencendido_GPIO(LEDS[1]);
+	              estadoActual = ESTADO_LED3_ON;
+	              break;
 
-          estadoActual = ESTADO_LED3_ON;
-          break;
-        case ESTADO_LED3_ON:
-          writePin(LD2_GPIO_Port, LD2_Pin, API_GPIO_PIN_RESET);
-          writePin(LD1_GPIO_Port, LD1_Pin, API_GPIO_PIN_SET);
-          writePin(LD3_GPIO_Port, LD3_Pin, API_GPIO_PIN_RESET);
+	          case ESTADO_LED3_ON:
+	              LEDencendido_GPIO(LEDS[2]);
+	              estadoActual = ESTADO_LED1_ON;
+	              break;
+	      }
+	  }
 
-          // Vuelve al estado inicial
-          estadoActual = ESTADO_LED1_ON;
-        	break;
-      }
-    }
+
   }
   /* USER CODE END 3 */
 }
@@ -142,14 +126,9 @@ void SystemClock_Config(void)
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage
-  */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -163,15 +142,11 @@ void SystemClock_Config(void)
     Error_Handler();
   }
 
-  /** Activate the Over-Drive mode
-  */
   if (HAL_PWREx_EnableOverDrive() != HAL_OK)
   {
     Error_Handler();
   }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
@@ -190,25 +165,6 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-static void MX_GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pins : LD1_Pin LD3_Pin LD2_Pin */
-  GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin|LD2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-}
-
 void Error_Handler(void)
 {
   __disable_irq();
@@ -217,8 +173,8 @@ void Error_Handler(void)
   }
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 void assert_failed(uint8_t *file, uint32_t line)
 {
 }
-#endif /* USE_FULL_ASSERT */
+#endif

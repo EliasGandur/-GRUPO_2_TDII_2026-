@@ -4,8 +4,13 @@
  *  Created on: Jul 31, 2026
  *      Author: Gandur Elias , Gandur Solana , Gandur Juan Ignacio.
  */
+
 #include "API_Delay.h"
 #include "stm32f4xx_hal.h"
+
+
+//----------------Desarrollo de las funciones-----------------//
+
 
 void delayInit(delay_t * delay, tick_t duration) {
     if (delay == NULL) return;
@@ -13,6 +18,8 @@ void delayInit(delay_t * delay, tick_t duration) {
     delay->duration = duration;  // Carga la duración requerida //
     delay->running = false;      // No inicia el conteo todavía //
 }
+
+
 
 bool_t delayRead(delay_t * delay) {
     if (delay == NULL) return false;
@@ -39,4 +46,4 @@ void delayWrite(delay_t * delay, tick_t duration) {
     delay->duration = duration;  // Actualiza la duración del tiempo de retardo //
 }
 
-
+//----------------------------------------------------------------//
