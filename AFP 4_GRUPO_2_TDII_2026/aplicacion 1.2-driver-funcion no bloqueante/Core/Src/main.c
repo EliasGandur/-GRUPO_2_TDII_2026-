@@ -18,7 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "string.h"
+#include <stdbool.h>
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "API_GPIO.h"
@@ -33,15 +34,13 @@ typedef enum {
     ESTADO_LED3_ON   // LED3 encendido
 } estadoSecuencia_t;
 
-typedef enum {
-    DIR_FORWARD = 0,
-    DIR_BACKWARD
-} SequenceDirection_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define LED1 LD1_Pin //led verde
+#define LED2 LD2_Pin //led azul
+#define LED3 LD3_Pin // led rojo
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,31 +51,20 @@ typedef enum {
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-delay_t pasoDelay;
+led_t LEDS[] = {LED1, LED2, LED3};
 estadoSecuencia_t estadoActual = ESTADO_LED1_ON;
-SequenceDirection_t direction = DIR_FORWARD;
+delay_t pasoDelay;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
+
 /* USER CODE BEGIN PFP */
-void checkButtonAndUpdateDirection(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void checkButtonAndUpdateDirection(void) {
-    static uint8_t botonAnterior = API_GPIO_PIN_RESET;
-    uint8_t botonActual = readPin(button_GPIO_Port, button_Pin);
 
-    // Detectar flanco ascendente: estaba APAGADO y pasa a ENCENDIDO
-    if (botonActual == API_GPIO_PIN_SET && botonAnterior == API_GPIO_PIN_RESET) {
-        direction = (direction == DIR_FORWARD) ? DIR_BACKWARD : DIR_FORWARD;
-    }
-
-    botonAnterior = botonActual;
-}
 /* USER CODE END 0 */
 
 /**
@@ -111,10 +99,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
   delayInit(&pasoDelay, 200);
 
-  // Estado inicial de las salidas
-  writePin(LD1_GPIO_Port, LD1_Pin, API_GPIO_PIN_SET);
-  writePin(LD2_GPIO_Port, LD2_Pin, API_GPIO_PIN_RESET);
-  writePin(LD3_GPIO_Port, LD3_Pin, API_GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -124,67 +108,67 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    // 1. Verificar el botón en cada ciclo del bucle
-    checkButtonAndUpdateDirection();
+	  Boton_GPIO();
 
-    // 2. Un único delayRead para controlar el tiempo de avance
-    if (delayRead(&pasoDelay))
-    {
-        if (direction == DIR_FORWARD)
-        {
-            /* Secuencia normal: LED1 -> LED2 -> LED3 */
-            switch (estadoActual)
-            {
-                case ESTADO_LED1_ON:
-                    writePin(LD1_GPIO_Port, LD1_Pin, API_GPIO_PIN_RESET);
-                    writePin(LD2_GPIO_Port, LD2_Pin, API_GPIO_PIN_SET);
-                    writePin(LD3_GPIO_Port, LD3_Pin, API_GPIO_PIN_RESET);
-                    estadoActual = ESTADO_LED2_ON;
-                    break;
 
-                case ESTADO_LED2_ON:
-                    writePin(LD1_GPIO_Port, LD1_Pin, API_GPIO_PIN_RESET);
-                    writePin(LD2_GPIO_Port, LD2_Pin, API_GPIO_PIN_RESET);
-                    writePin(LD3_GPIO_Port, LD3_Pin, API_GPIO_PIN_SET);
-                    estadoActual = ESTADO_LED3_ON;
-                    break;
+	      if (estado == false) {
+	          //-------Secuencia directa (0, 1, 2)------//
+	    	  if (delayRead(&pasoDelay)) {
 
-                case ESTADO_LED3_ON:
-                    writePin(LD1_GPIO_Port, LD1_Pin, API_GPIO_PIN_SET);
-                    writePin(LD2_GPIO_Port, LD2_Pin, API_GPIO_PIN_RESET);
-                    writePin(LD3_GPIO_Port, LD3_Pin, API_GPIO_PIN_RESET);
-                    estadoActual = ESTADO_LED1_ON;
-                    break;
-            }
-        }
-        else
-        {
-            /* Secuencia inversa: LED3 -> LED2 -> LED1 */
-            switch (estadoActual)
-            {
-                case ESTADO_LED3_ON:
-                    writePin(LD1_GPIO_Port, LD1_Pin, API_GPIO_PIN_RESET);
-                    writePin(LD2_GPIO_Port, LD2_Pin, API_GPIO_PIN_SET);
-                    writePin(LD3_GPIO_Port, LD3_Pin, API_GPIO_PIN_RESET);
-                    estadoActual = ESTADO_LED2_ON;
-                    break;
+	    	 		  //-------LEDS APAGADOS------//
+	    	 		  LEDapagado_GPIO(LEDS[0]);
+	    	 		  LEDapagado_GPIO(LEDS[1]);
+	    	 		  LEDapagado_GPIO(LEDS[2]);
+	    	 	      //--------------------------//
 
-                case ESTADO_LED2_ON:
-                    writePin(LD1_GPIO_Port, LD1_Pin, API_GPIO_PIN_SET);
-                    writePin(LD2_GPIO_Port, LD2_Pin, API_GPIO_PIN_RESET);
-                    writePin(LD3_GPIO_Port, LD3_Pin, API_GPIO_PIN_RESET);
-                    estadoActual = ESTADO_LED1_ON;
-                    break;
+	    	 	      switch (estadoActual) {
+	    	 	          case ESTADO_LED1_ON:
+	    	 	        	  LEDencendido_GPIO(LEDS[0]);
+	    	 	              estadoActual = ESTADO_LED2_ON;
+	    	 	              break;
 
-                case ESTADO_LED1_ON:
-                    writePin(LD1_GPIO_Port, LD1_Pin, API_GPIO_PIN_RESET);
-                    writePin(LD2_GPIO_Port, LD2_Pin, API_GPIO_PIN_RESET);
-                    writePin(LD3_GPIO_Port, LD3_Pin, API_GPIO_PIN_SET);
-                    estadoActual = ESTADO_LED3_ON;
-                    break;
-            }
-        }
-    }
+	    	 	          case ESTADO_LED2_ON:
+	    	 	        	  LEDencendido_GPIO(LEDS[1]);
+	    	 	              estadoActual = ESTADO_LED3_ON;
+	    	 	              break;
+
+	    	 	          case ESTADO_LED3_ON:
+	    	 	              LEDencendido_GPIO(LEDS[2]);
+	    	 	              estadoActual = ESTADO_LED1_ON;
+	    	 	              break;
+	    	 	      }
+	    	 	  }
+	      }
+	      else {
+	          //----------Secuencia inversa (2, 1, 0)---------//
+
+	    	  if (delayRead(&pasoDelay)) {
+
+	    	 		  //-------LEDS APAGADOS------//
+	    	 		  LEDapagado_GPIO(LEDS[0]);
+	    	 		  LEDapagado_GPIO(LEDS[1]);
+	    	 		  LEDapagado_GPIO(LEDS[2]);
+	    	 	      //--------------------------//
+
+	    	 	      switch (estadoActual) {
+	    	 	          case ESTADO_LED1_ON:
+	    	 	        	  LEDencendido_GPIO(LEDS[2]);
+	    	 	              estadoActual = ESTADO_LED2_ON;
+	    	 	              break;
+
+	    	 	          case ESTADO_LED2_ON:
+	    	 	        	  LEDencendido_GPIO(LEDS[1]);
+	    	 	              estadoActual = ESTADO_LED3_ON;
+	    	 	              break;
+
+	    	 	          case ESTADO_LED3_ON:
+	    	 	              LEDencendido_GPIO(LEDS[0]);
+	    	 	              estadoActual = ESTADO_LED1_ON;
+	    	 	              break;
+	    	 	      }
+	    	 	  }
+	      }
+
   }
   /* USER CODE END 3 */
 }
@@ -237,31 +221,6 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-static void MX_GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : button_Pin */
-  GPIO_InitStruct.Pin = button_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN; // Cambiado a PULLDOWN para evitar pin flotante
-  HAL_GPIO_Init(button_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : LD1_Pin LD3_Pin LD2_Pin */
-  GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin|LD2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-}
 
 /* USER CODE BEGIN 4 */
 
