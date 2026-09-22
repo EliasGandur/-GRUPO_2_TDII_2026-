@@ -2,14 +2,24 @@
 /**
   ******************************************************************************
   * @file           : main.c
-  * @brief          : Main program body - Máquina de estados para leds y botón
+  * @brief          : Main program body
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2026 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
   ******************************************************************************
   */
 /* USER CODE END Header */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "string.h"
+#include <stdbool.h>
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "API_GPIO.h"
@@ -19,59 +29,81 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 typedef enum {
-    MODO_APAGADO = 0,
-    MODO_SECUENCIA_150MS, // Modo 1: Alternancia de los 3 LEDs a 150ms
-    MODO_TODOS_600MS,     // Modo 2: Parpadeo simultáneo a 600ms
-    MODO_INDEPENDIENTE,   // Modo 3: LED1 (100ms), LED2 (300ms), LED3 (600ms)
-    MODO_INVERSO_150MS    // Modo 4: LED1 y 3 en fase, LED2 en contrafase a 150ms
-} modo_secuencia_t;
+    ESTADO_LED1_ON,  // LED1 encendido
+    ESTADO_LED2_ON,  // LED2 encendido
+    ESTADO_LED3_ON   // LED3 encendido
+} estadoSecuencia_t;
+
 /* USER CODE END PTD */
 
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+#define LED1 LD1_Pin //led verde
+#define LED2 LD2_Pin //led azul
+#define LED3 LD3_Pin // led rojo
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
 /* Private variables ---------------------------------------------------------*/
+
 /* USER CODE BEGIN PV */
-modo_secuencia_t modoActual = MODO_APAGADO;
-
-// Delays para los diferentes modos
-delay_t delayModo1;
-delay_t delayModo2;
-delay_t delayLed1, delayLed2, delayLed3;
-delay_t delayModo4;
-
-// Variables de estado interno para secuencias
-uint8_t pasoSecuencia = 0;
-bool_t estadoInverso = false;
+led_t LEDS[] = {LED1, LED2, LED3};
+estadoSecuencia_t estadoActual = ESTADO_LED1_ON;
+delay_t pasoDelay1;
+delay_t pasoDelay2;
+delay_t pasoDelay3;
+delay_t pasoDelay4;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-void apagarTodosLosLeds(void);
+
+/* USER CODE BEGIN PFP */
+/* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void apagarTodosLosLeds(void) {
-    writePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-    writePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-    writePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
-}
+
 /* USER CODE END 0 */
 
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
   SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
   MX_GPIO_Init();
 
   /* USER CODE BEGIN 2 */
-  API_GPIO_Init();
-
-  // Inicialización de delays no bloqueantes
-  delayInit(&delayModo1, 150);
-  delayInit(&delayModo2, 600);
-  delayInit(&delayLed1, 100);
-  delayInit(&delayLed2, 300);
-  delayInit(&delayLed3, 600);
-  delayInit(&delayModo4, 150);
+  delayInit(&pasoDelay4, 100);
+  delayInit(&pasoDelay1, 150);
+  delayInit(&pasoDelay2, 300);
+  delayInit(&pasoDelay3, 600);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -79,90 +111,92 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+
     /* USER CODE BEGIN 3 */
+	  Boton_GPIO();
 
-    // 1. Detección del botón para cambio de modo
-    if (API_GPIO_IsButtonPressed()) {
-        apagarTodosLosLeds();
-        pasoSecuencia = 0;
-        estadoInverso = false;
+	    switch (estado) {
+	        case 0:
 
-        modoActual++;
-        if (modoActual > MODO_INVERSO_150MS) {
-            modoActual = MODO_SECUENCIA_150MS; // Vuelve al primer modo
-        }
-    }
+	        	if (delayRead(&pasoDelay1)) {
 
-    // 2. Ejecución del modo seleccionado (Síncrono y No Bloqueante)
-    switch (modoActual) {
+	        			  //-------LEDS APAGADOS------//
+	        			  LEDapagado_GPIO(LEDS[0]);
+	        			  LEDapagado_GPIO(LEDS[1]);
+	        			  LEDapagado_GPIO(LEDS[2]);
+	        		      //--------------------------//
 
-        case MODO_APAGADO:
-            apagarTodosLosLeds();
-            break;
+	        		      switch (estadoActual) {
+	        		          case ESTADO_LED1_ON:
+	        		        	  LEDencendido_GPIO(LEDS[0]);
+	        		              estadoActual = ESTADO_LED2_ON;
+	        		              break;
 
-        /* MODO 1: Alternancia secuencial de los LEDs cada 150ms */
-        case MODO_SECUENCIA_150MS:
-            if (delayRead(&delayModo1)) {
-                apagarTodosLosLeds();
-                switch (pasoSecuencia) {
-                    case 0:
-                        writePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-                        pasoSecuencia = 1;
-                        break;
-                    case 1:
-                        writePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-                        pasoSecuencia = 2;
-                        break;
-                    case 2:
-                        writePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-                        pasoSecuencia = 0;
-                        break;
-                }
-            }
-            break;
+	        		          case ESTADO_LED2_ON:
+	        		        	  LEDencendido_GPIO(LEDS[1]);
+	        		              estadoActual = ESTADO_LED3_ON;
+	        		              break;
 
-        /* MODO 2: Parpadeo simultáneo de los 3 LEDs a 600ms */
-        case MODO_TODOS_600MS:
-            if (delayRead(&delayModo2)) {
-                API_GPIO_ToggleAllLeds();
-            }
-            break;
+	        		          case ESTADO_LED3_ON:
+	        		              LEDencendido_GPIO(LEDS[2]);
+	        		              estadoActual = ESTADO_LED1_ON;
+	        		              break;
+	        		      }
+	        		  }
 
-        /* MODO 3: Tiempos independientes para cada LED (100ms, 300ms, 600ms) */
-        case MODO_INDEPENDIENTE:
-            if (delayRead(&delayLed1)) {
-                HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
-            }
-            if (delayRead(&delayLed2)) {
-                HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-            }
-            if (delayRead(&delayLed3)) {
-                HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-            }
-            break;
+	        break;
 
-        /* MODO 4: LED 1 y 3 en fase, LED 2 en contrafase a 150ms */
-        case MODO_INVERSO_150MS:
-            if (delayRead(&delayModo4)) {
-                estadoInverso = !estadoInverso;
-                if (estadoInverso) {
-                    writePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-                    writePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-                    writePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-                } else {
-                    writePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-                    writePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
-                    writePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-                }
-            }
-            break;
-    }
+	        case 1:
+
+	        	if (delayRead(&pasoDelay2)) {
+
+	        		   toggleLed_GPIO(LEDS[0]);
+
+	        		   toggleLed_GPIO(LEDS[1]);
+
+	        		   toggleLed_GPIO(LEDS[2]);
+	        	}
+	        break;
+
+	        case 2:
+
+	        	if (delayRead(&pasoDelay4)) {
+	        		 toggleLed_GPIO(LEDS[0]);
+	            }
+	        	if (delayRead(&pasoDelay2)) {
+	        		 toggleLed_GPIO(LEDS[1]);
+	        	}
+	        	if (delayRead(&pasoDelay3)) {
+	        		 toggleLed_GPIO(LEDS[2]);
+	            }
+
+	        break;
+
+	        case 3:
+
+
+
+
+	        	if (delayRead(&pasoDelay1)) {
+
+	        	   toggleLed_GPIO(LEDS[0]);
+	        	   toggleLed_GPIO(LEDS[1]);
+	        	   toggleLed_GPIO(LEDS[2]);
+
+	        		        	}
+	        break;
+
+
+	    }
+
+
   }
   /* USER CODE END 3 */
 }
 
 /**
   * @brief System Clock Configuration
+  * @retval None
   */
 void SystemClock_Config(void)
 {
@@ -205,33 +239,32 @@ void SystemClock_Config(void)
 
 /**
   * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
   */
-static void MX_GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+/* USER CODE BEGIN 4 */
 
-  HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
+/* USER CODE END 4 */
 
-  /* Botón con PULLDOWN para evitar entradas flotantes */
-  GPIO_InitStruct.Pin = boton_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(boton_GPIO_Port, &GPIO_InitStruct);
-
-  /* LEDs */
-  GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin|LD2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-}
-
+/**
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
+  /* USER CODE BEGIN Error_Handler_Debug */
   __disable_irq();
-  while (1) {}
+  while (1)
+  {
+  }
+  /* USER CODE END Error_Handler_Debug */
 }
+
+#ifdef  USE_FULL_ASSERT
+void assert_failed(uint8_t *file, uint32_t line)
+{
+  /* USER CODE BEGIN 6 */
+  /* USER CODE END 6 */
+}
+#endif /* USE_FULL_ASSERT */

@@ -1,81 +1,83 @@
 /*
  * API_GPIO.c
  *
- *  Created on: Jul 26, 2026
+ *  Created on: Jul 27, 2026
  *      Author: Gandur Elias , Gandur Solana , Gandur Juan Ignacio.
  */
- //-----------Includes---------------- //
-#include "main.h"
+
 #include "API_GPIO.h"
-#include "API_Delay.h"
+#include "main.h"
+#include <stdbool.h>
+uint8_t estado = 0;
 
-//-------------Declaración de variables---------//
 
-//---------------------------------------------//
+//Desarrollo de las funciones//
 
-static const gpio_led_t leds[3] = {
-    { .port = LD1_GPIO_Port, .pin = LD1_Pin },
-    { .port = LD2_GPIO_Port, .pin = LD2_Pin },
-    { .port = LD3_GPIO_Port, .pin = LD3_Pin }
-};
+void MX_GPIO_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-static const gpio_button_t button = {
-    .port = boton_GPIO_Port,
-    .pin = boton_Pin
-};
-//-------------Desarrollo de Funciones-----------//
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
-void API_GPIO_Init(void) {
-    for (int i = 0; i < 3; i++) {
-        HAL_GPIO_WritePin(leds[i].port, leds[i].pin, GPIO_PIN_RESET);
-    }
+  /* Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
+
+  /* Configure GPIO pins : LD1_Pin LD3_Pin LD2_Pin */
+  GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin|LD2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* ------ AGREGAR DESDE AQUÍ ------ */
+  /* Configure GPIO pin : button_Pin (B1 / PC13) */
+  GPIO_InitStruct.Pin = button_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL; // Las placas NUCLEO ya poseen Pull-Up física
+  HAL_GPIO_Init(button_GPIO_Port, &GPIO_InitStruct);
+  /* -------------------------------- */
 }
 
-void API_GPIO_ToggleAllLeds(void) {
-    for (int i = 0; i < 3; i++) {
-        HAL_GPIO_TogglePin(leds[i].port, leds[i].pin);
-    }
-}
+void Boton_GPIO(void) {
+    static GPIO_PinState estado_anterior = GPIO_PIN_SET; // NUCLEO: en reposo lee SET (HIGH)
+    static uint32_t ultima_marca_tiempo = 0;
 
-void writePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, GPIO_PinState_t PinState) {
-    HAL_GPIO_WritePin(GPIOx, GPIO_Pin, (GPIO_PinState)PinState);
-}
+    GPIO_PinState estado_actual = HAL_GPIO_ReadPin(button_GPIO_Port, button_Pin);
 
+    // Detectar flanco de bajada (presión del botón hacia GND / RESET)
+    if (estado_actual == GPIO_PIN_RESET && estado_anterior == GPIO_PIN_SET) {
+        // Antirrebote no bloqueante de 50 ms
+        if ((HAL_GetTick() - ultima_marca_tiempo) > 50) {
 
-void API_GPIO_ParpadeoConDelay(void){
-	        HAL_GPIO_TogglePin(leds[0].port, leds[0].pin);
-	        HAL_Delay(100);
-	        HAL_GPIO_TogglePin(leds[1].port, leds[1].pin);
-	        HAL_Delay(300);
-	        HAL_GPIO_TogglePin(leds[2].port, leds[2].pin);
-	        HAL_Delay(600);
-}
-void API_GPIO_ParpadeoInverso(void){
-	    HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	    HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-	    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-	    HAL_Delay(150);
-	    HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-	    HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
-	    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-	    HAL_Delay(150);
-}
+            estado = (estado + 1) % 4; // Rota cíclicamente: 0 -> 1 -> 2 -> 3 -> 0
 
-bool API_GPIO_IsButtonPressed(void) {
-    static bool prev_state = false;
+            //------Limpieza total: Apagamos los LEDs al presionar el botón----//
+                    LEDapagado_GPIO(LEDS[0]);
+                    LEDapagado_GPIO(LEDS[1]);
+                    LEDapagado_GPIO(LEDS[2]);
 
-
-    bool current_state = (HAL_GPIO_ReadPin(button.port, button.pin) == GPIO_PIN_SET);
-
-    // Detectar flanco ascendente (transición de no presionado a presionado)
-    if (current_state && !prev_state) {
-        HAL_Delay(50); // Antirrebote básico
-        prev_state = true;
-        return true;
-    } else if (!current_state) {
-        prev_state = false;
+          //---Para el case 3, encendemos ÚNICAMENTE el LED 1 como estado de partida--//
+                    if (estado == 3) {
+                        LEDencendido_GPIO(LEDS[1]);
+                    }
+            ultima_marca_tiempo = HAL_GetTick();
+        }
     }
 
-    return false;
+    estado_anterior = estado_actual;
 }
-//----------------------Fin----------------//
+
+void LEDencendido_GPIO(led_t LDx){
+	HAL_GPIO_WritePin(GPIOB, LDx, GPIO_PIN_SET);
+}
+
+void LEDapagado_GPIO(led_t LDx){
+	HAL_GPIO_WritePin(GPIOB, LDx, GPIO_PIN_RESET);
+}
+
+void toggleLed_GPIO(led_t LDx){
+	HAL_GPIO_TogglePin(GPIOB, LDx);
+}

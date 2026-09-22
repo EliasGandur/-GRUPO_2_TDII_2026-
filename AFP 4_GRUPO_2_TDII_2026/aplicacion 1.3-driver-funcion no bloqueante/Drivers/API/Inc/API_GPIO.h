@@ -1,37 +1,37 @@
 /*
  * API_GPIO.h
  *
- *  Created on: Jul 26, 2026
+ *  Created on: Jul 27, 2026
  *      Author: Gandur Elias , Gandur Solana , Gandur Juan Ignacio.
  */
 
-#ifndef API_INC_API_GPIO_H_
-#define API_INC_API_GPIO_H_
+#ifndef API_GPIO_H_
+#define API_GPIO_H_
+
+//------Bibliotecas-----//
+
+#include "stm32f4xx_hal.h"
 #include <stdbool.h>
-#include "main.h"
-#include <stdint.h>
 
-typedef struct {
-    GPIO_TypeDef *port;
-    uint16_t pin;
-} gpio_led_t;
+//---------------------//
 
-typedef struct {
-    GPIO_TypeDef *port;
-    uint16_t pin;
-} gpio_button_t;
+typedef uint16_t led_t;//Enteros de 16 bits//
+extern uint8_t estado;
+extern led_t LEDS[];
 
-typedef enum {
-    API_GPIO_PIN_RESET = 0,
-    API_GPIO_PIN_SET
-} GPIO_PinState_t;
-void MX_GPIO_Init_Custom(void);
-void API_GPIO_Init(void);
-void API_GPIO_ToggleAllLeds(void);
-bool API_GPIO_IsButtonPressed(void);
-void writePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, GPIO_PinState_t PinState);
-void API_GPIO_ParpadeoConDelay(void);
-void API_GPIO_ParpadeoInverso(void);
+//------INICIALIZAMOS-----//
 
-#endif /* API_INC_API_GPIO_H_ */
+void MX_GPIO_Init(void);
 
+//-----------------------//
+
+//declaramos las funciones a utilizar//
+
+void LEDencendido_GPIO(led_t LDx);
+void LEDapagado_GPIO(led_t LDx);
+void toggleLed_GPIO(led_t LDx);
+void Boton_GPIO(void);
+
+//----------------------------------//
+
+#endif /* API_GPIO_H_ */

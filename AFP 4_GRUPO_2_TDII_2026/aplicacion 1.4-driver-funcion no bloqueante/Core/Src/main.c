@@ -18,7 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "string.h"
+#include <stdbool.h>
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "API_GPIO.h"
@@ -27,12 +28,19 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef enum {
+    ESTADO_LED1_ON,  // LED1 encendido
+    ESTADO_LED2_ON,  // LED2 encendido
+    ESTADO_LED3_ON   // LED3 encendido
+} estadoSecuencia_t;
 
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define LED1 LD1_Pin //led verde
+#define LED2 LD2_Pin //led azul
+#define LED3 LD3_Pin // led rojo
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -43,8 +51,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-// Tiempos de alternancia en ms
-uint8_t secuencia = 0;
+led_t LEDS[] = {LED1, LED2, LED3};
+estadoSecuencia_t estadoActual = ESTADO_LED1_ON;
 delay_t pasoDelay1;
 delay_t pasoDelay2;
 delay_t pasoDelay3;
@@ -53,9 +61,8 @@ delay_t pasoDelay4;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-/* USER CODE BEGIN PFP */
 
+/* USER CODE BEGIN PFP */
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -69,7 +76,6 @@ static void MX_GPIO_Init(void);
   */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -92,11 +98,12 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+
   /* USER CODE BEGIN 2 */
-    delayInit(&pasoDelay1, 100);
-    delayInit(&pasoDelay2, 250);
-    delayInit(&pasoDelay3, 500);
-    delayInit(&pasoDelay4, 1000);
+  delayInit(&pasoDelay1, 100);
+  delayInit(&pasoDelay2, 250);
+  delayInit(&pasoDelay3, 500);
+  delayInit(&pasoDelay4, 1000);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -106,38 +113,28 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	    if(API_GPIO_IsButtonPressed()){
-		  secuencia++;
-		  if(secuencia >= 4){
-		  		  	  		  		  secuencia = 0;
-		  		  	  		  	  }
-		  while (API_GPIO_IsButtonPressed()) {
-		          HAL_Delay(10);
-		      }
+	  Boton_GPIO();
 
-	  }
-	  switch(secuencia){
-	 			  case 0:
-	 				 if (delayRead(&pasoDelay1)){
-	 				  API_GPIO_ToggleAllLeds();
-	 					 				 }
-	 				  break;
-	 			  case 1:
-	 				 if (delayRead(&pasoDelay2)){
-	 				  API_GPIO_ToggleAllLeds();
-	 				 }
-	 				  break;
-	 			  case 2:
-	 				 if (delayRead(&pasoDelay3)){
-	 				  API_GPIO_ToggleAllLeds();
-	 					 				 }
-	 				  break;
-	 			  case 3:
-	 				 if (delayRead(&pasoDelay4)){
-	 				  API_GPIO_ToggleAllLeds();
-	 					 				 }
-	 				  break;
-	 			  }
+	    // Seleccionar cuál delay utilizar en este ciclo
+	    delay_t* delayActual = NULL;
+
+	    switch (estado) {
+	        case 0: delayActual = &pasoDelay1; break;
+	        case 1: delayActual = &pasoDelay2; break;
+	        case 2: delayActual = &pasoDelay3; break;
+	        case 3: delayActual = &pasoDelay4; break;
+	        default: delayActual = &pasoDelay1; break;
+	    }
+
+	    //---Se ejecuta una sola vez la lógica con el delay seleccionado---//
+	    if (delayRead(delayActual)) {
+
+          toggleLed_GPIO(LEDS[0]);
+          toggleLed_GPIO(LEDS[1]);
+          toggleLed_GPIO(LEDS[2]);
+
+ }
+
   }
   /* USER CODE END 3 */
 }
@@ -151,14 +148,9 @@ void SystemClock_Config(void)
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage
-  */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -172,15 +164,11 @@ void SystemClock_Config(void)
     Error_Handler();
   }
 
-  /** Activate the Over-Drive mode
-  */
   if (HAL_PWREx_EnableOverDrive() != HAL_OK)
   {
     Error_Handler();
   }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
@@ -199,38 +187,6 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-static void MX_GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  /* USER CODE BEGIN MX_GPIO_Init_1 */
-
-  /* USER CODE END MX_GPIO_Init_1 */
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : button_Pin */
-  GPIO_InitStruct.Pin = button_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(button_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : LD1_Pin LD3_Pin LD2_Pin */
-  GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin|LD2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /* USER CODE BEGIN MX_GPIO_Init_2 */
-
-  /* USER CODE END MX_GPIO_Init_2 */
-}
 
 /* USER CODE BEGIN 4 */
 
@@ -243,7 +199,6 @@ static void MX_GPIO_Init(void)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1)
   {
@@ -252,18 +207,9 @@ void Error_Handler(void)
 }
 
 #ifdef  USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
