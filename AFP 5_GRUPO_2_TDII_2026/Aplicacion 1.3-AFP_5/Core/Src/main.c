@@ -42,6 +42,10 @@ typedef enum {
 #define LED1 LD1_Pin //led verde
 #define LED2 LD2_Pin //led azul
 #define LED3 LD3_Pin // led rojo
+#define T1 100
+#define T2 150
+#define T3 300
+#define T4 600
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -58,7 +62,6 @@ delay_t pasoDelay1;
 delay_t pasoDelay2;
 delay_t pasoDelay3;
 delay_t pasoDelay4;
- int estado = 0; //-Variable que controla el switch (0, 1, 2, 3)-//
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,10 +105,10 @@ int main(void)
   MX_GPIO_Init();
   debounceFSM_init();
   /* USER CODE BEGIN 2 */
-  delayInit(&pasoDelay4, 100);
-  delayInit(&pasoDelay1, 150);
-  delayInit(&pasoDelay2, 300);
-  delayInit(&pasoDelay3, 600);
+  delayInit(&pasoDelay4, T1);
+  delayInit(&pasoDelay1, T2);
+  delayInit(&pasoDelay2, T3);
+  delayInit(&pasoDelay3, T4);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -204,22 +207,7 @@ int main(void)
   /* USER CODE END 3 */
 }
 
-void buttonPressed(void) {
-	estado = (estado + 1) % 4;
-    LEDtoggle_GPIO(LED1);
-}
 
-void buttonReleased(void) {
-    LEDtoggle_GPIO(LED3);
-}
-
-bool readKey(void) {
-    return (readButton_GPIO() == false);
-}
-
-uint32_t getCurrentMs(void) {
-    return HAL_GetTick();
-}
 
 
 /**

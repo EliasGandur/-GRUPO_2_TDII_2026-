@@ -29,7 +29,7 @@ void MX_GPIO_Init(void);
 
 void LEDencendido_GPIO(led_t LDx);
 void LEDapagado_GPIO(led_t LDx);
-void toggleLed_GPIO(led_t LDx);
+void LEDtoggle_GPIO(led_t LDx);
 buttonStatus_t readButton_GPIO(void);
 
 //----------------------------------------//

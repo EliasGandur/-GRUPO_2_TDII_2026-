@@ -16,7 +16,6 @@
 //---------------------//
 
 typedef uint16_t led_t;//Enteros de 16 bits//
-extern uint8_t estado;
 typedef bool buttonStatus_t;
 
 //------INICIALIZAMOS-----//

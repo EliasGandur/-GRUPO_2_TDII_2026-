@@ -8,7 +8,7 @@
 #include "API_GPIO.h"
 #include "main.h"
 #include <stdbool.h>
-uint8_t estado = 0;
+
 
 
 //Desarrollo de las funciones//

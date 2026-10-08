@@ -36,6 +36,10 @@
 #define LED1 LD1_Pin //led verde
 #define LED2 LD2_Pin //led azul
 #define LED3 LD3_Pin // led rojo
+#define T1 100
+#define T2 250
+#define T3 500
+#define T4 1000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -51,7 +55,6 @@ delay_t pasoDelay1;
 delay_t pasoDelay2;
 delay_t pasoDelay3;
 delay_t pasoDelay4;
-int sentido = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,10 +98,10 @@ int main(void)
   MX_GPIO_Init();
   debounceFSM_init();
   /* USER CODE BEGIN 2 */
-  delayInit(&pasoDelay1, 100);
-  delayInit(&pasoDelay2, 250);
-  delayInit(&pasoDelay3, 500);
-  delayInit(&pasoDelay4, 1000);
+  delayInit(&pasoDelay1, T1);
+  delayInit(&pasoDelay2, T2);
+  delayInit(&pasoDelay3, T3);
+  delayInit(&pasoDelay4, T4);
 
   LEDapagado_GPIO(LEDS[0]);
   LEDapagado_GPIO(LEDS[1]);
@@ -148,22 +151,7 @@ int main(void)
   /* USER CODE END 3 */
 }
 
-void buttonPressed(void) {
-	estado = (estado + 1) % 4;
-	LEDtoggle_GPIO(LEDS[1]);
-}
 
-void buttonReleased(void) {
-	LEDtoggle_GPIO(LEDS[3]);
-}
-
-bool readKey(void) {
-    return (readButton_GPIO() == false);
-}
-
-uint32_t getCurrentMs(void) {
-    return HAL_GetTick();
-}
 /**
   * @brief System Clock Configuration
   * @retval None

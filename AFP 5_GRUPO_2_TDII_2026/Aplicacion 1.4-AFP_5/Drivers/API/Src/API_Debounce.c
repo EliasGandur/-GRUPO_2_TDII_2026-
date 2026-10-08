@@ -5,10 +5,15 @@
  *      Author: Gandur Elias , Gandur Solana , Gandur Juan Ignacio.
  */
 #include "API_debounce.h"
+#include "API_GPIO.h"
+#include "main.h"
 
 // -----------------------Definiciones Privadas-------------------------------//
 
 #define DEBOUNCE_TIME_MS 40
+#define LED1 LD1_Pin //led verde
+#define LED2 LD2_Pin //led azul
+#define LED3 LD3_Pin // led rojo
 
 // ----------------------Variables Estáticas del Driver-----------------------//
 
@@ -19,6 +24,8 @@ static uint32_t startTimeMs;
 static bool isPressed = false;
 
 // ---------------------------------------------------------------------------//
+
+int estado = 0;
 
 // -----------------Funciones Estáticas Auxiliares (Internas al Driver)-------//
 
@@ -104,5 +111,22 @@ void debounceFSM_update() {
             debounceFSM_init();
             break;
     }
+}
+
+void buttonPressed(void) {
+	estado = (estado + 1) % 4;
+
+}
+
+void buttonReleased(void) {
+
+}
+
+bool readKey(void) {
+    return (readButton_GPIO() == false);
+}
+
+uint32_t getCurrentMs(void) {
+    return HAL_GetTick();
 }
 

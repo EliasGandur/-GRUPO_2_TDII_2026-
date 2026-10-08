@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+extern int estado;
 
 // -----------------------------------------------------------------------------
                      //  Definiciones y Tipos de Datos //

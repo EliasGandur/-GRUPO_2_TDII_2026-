@@ -42,6 +42,7 @@ typedef enum {
 #define LED1 LD1_Pin //led verde
 #define LED2 LD2_Pin //led azul
 #define LED3 LD3_Pin // led rojo
+#define T1 200
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -55,7 +56,6 @@ typedef enum {
 led_t LEDS[] = {LED1, LED2, LED3};
 estadoSecuencia_t estadoActual = ESTADO_LED1_ON;
 delay_t pasoDelay;
-int sentido = 1;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -99,7 +99,7 @@ int main(void)
   MX_GPIO_Init();
   debounceFSM_init();
   /* USER CODE BEGIN 2 */
-  delayInit(&pasoDelay, 200);
+  delayInit(&pasoDelay, T1);
 
   /* USER CODE END 2 */
 
@@ -164,22 +164,7 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
-void buttonPressed(void) {
-    sentido *= -1;
-    toggleLed_GPIO(LED1);
-}
 
-void buttonReleased(void) {
-    toggleLed_GPIO(LED3);
-}
-
-bool readKey(void) {
-    return (readButton_GPIO() == false);
-}
-
-uint32_t getCurrentMs(void) {
-    return HAL_GetTick();
-}
 
 
 /**

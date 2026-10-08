@@ -54,6 +54,6 @@ void LEDapagado_GPIO(led_t LDx){
 	HAL_GPIO_WritePin(GPIOB, LDx, GPIO_PIN_RESET);
 }
 
-void toggleLed_GPIO(led_t LDx){
+void LEDtoggle_GPIO(led_t LDx){
 	HAL_GPIO_TogglePin(GPIOB, LDx);
 }
